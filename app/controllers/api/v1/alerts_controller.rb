@@ -43,7 +43,8 @@ module Api
       end
 
       def alert_params
-        params.require(:alert).permit(:Parameters)
+        puts params
+        # params.require(:alert).permit(:ins)
       end
     end
   end
