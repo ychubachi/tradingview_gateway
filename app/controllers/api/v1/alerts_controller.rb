@@ -15,6 +15,8 @@ module Api
       end
 
       def create
+        puts "##################"
+        puts params
         alert = Alert.new(alert_params)
         if alert.save
           render json: { status: 'SUCCESS', data: alert }
@@ -43,7 +45,6 @@ module Api
       end
 
       def alert_params
-        puts params
         # params.require(:alert).permit(:ins)
       end
     end
