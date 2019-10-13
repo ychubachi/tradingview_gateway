@@ -45,7 +45,7 @@ module Api
       end
 
       def alert_params
-        # params.require(:alert).permit(:ins)
+        params.require(:alert).permit(:instrument)
       end
     end
   end
