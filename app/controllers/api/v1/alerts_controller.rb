@@ -45,8 +45,7 @@ module Api
       end
 
       def alert_params
-        params.require(:alert).permit(:tickerid)
-        params.require(:alert).permit(:strategy)
+        params.require(:alert).permit(:tickerid, :strategy)
       end
     end
   end
