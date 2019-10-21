@@ -23,6 +23,22 @@ module Api
         else
           render json: { status: 'ERROR', data: alert.errors }
         end
+
+        key = ENV['KEY']
+        secret = ENV['SECRET']
+        gateway = BitflyerGateway.new(key, secret)
+
+        case alert.strategy
+        when 'long'
+          gateway.close_all()
+          gateway.buy()
+        when 'short'
+          gateway.close_all()
+          gateway.sell()
+        when 'close_all'
+          gateway.close_all()
+        end
+
       end
 
       def destroy
@@ -46,6 +62,51 @@ module Api
 
       def alert_params
         params.require(:alert).permit(:tickerid, :strategy)
+      end
+
+      class BitflyerGateway
+        def initialize(key, secret)
+          @key = key
+          @secret = secret
+          @private_client = Bitflyer.http_private_client(key, secret)
+        end
+
+        def buy()
+          # close_all()
+          @private_client.send_child_order(product_code: 'FX_BTC_JPY', child_order_type: 'MARKET', side: 'BUY', size: 0.01)
+        end
+
+        def sell()
+          # close_all()
+          @private_client.send_child_order(product_code: 'FX_BTC_JPY', child_order_type: 'MARKET', side: 'SELL', size: 0.01)
+        end
+
+        def close_all()
+          size_buy = 0
+          size_sell = 0
+
+          result = positions()
+          result.each do |position|
+            side = position['side']
+            if side == 'BUY'
+              size_buy += position['size']
+            elsif side == 'SELL'
+              size_sell += position['size']
+            end
+          end
+
+          if size_buy > 0
+            @private_client.send_child_order(product_code: 'FX_BTC_JPY', child_order_type: 'MARKET', side: 'SELL', size: size_buy)
+          elsif size_sell > 0
+            @private_client.send_child_order(product_code: 'FX_BTC_JPY', child_order_type: 'MARKET', side: 'BUY',  size: size_sell)
+          end
+
+          positions()
+        end
+
+        def positions()
+          @private_client.positions(product_code: 'FX_BTC_JPY')
+        end
       end
     end
   end
