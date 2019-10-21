@@ -10,13 +10,14 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20191020104750) do
+ActiveRecord::Schema.define(version: 20191021135702) do
 
   create_table "alerts", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string   "tickerid"
     t.string   "strategy"
+    t.         "size"
   end
 
 end

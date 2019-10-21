@@ -33,7 +33,7 @@ module Api
             if sizes[:sell] > 0
               gateway.close_all()
             end
-            gateway.buy()
+            gateway.buy(size = alert.size)
           end
         when 'short'
           sizes = gateway.position_sizes()
@@ -41,7 +41,7 @@ module Api
             if sizes[:buy] > 0
               gateway.close_all()
             end
-            gateway.sell()
+            gateway.sell(size = alert.size)
           end
         when 'close_all'
           gateway.close_all()
@@ -69,7 +69,7 @@ module Api
       end
 
       def alert_params
-        params.require(:alert).permit(:tickerid, :strategy)
+        params.require(:alert).permit(:strategy, :size)
       end
 
       class BitflyerGateway
@@ -79,12 +79,12 @@ module Api
           @private_client = Bitflyer.http_private_client(key, secret)
         end
 
-        def buy()
-          @private_client.send_child_order(product_code: 'FX_BTC_JPY', child_order_type: 'MARKET', side: 'BUY', size: 0.01)
+        def buy(size = 0.001)
+          @private_client.send_child_order(product_code: 'FX_BTC_JPY', child_order_type: 'MARKET', side: 'BUY', size: size)
         end
 
-        def sell()
-          @private_client.send_child_order(product_code: 'FX_BTC_JPY', child_order_type: 'MARKET', side: 'SELL', size: 0.01)
+        def sell(size = 0.001)
+          @private_client.send_child_order(product_code: 'FX_BTC_JPY', child_order_type: 'MARKET', side: 'SELL', size: size)
         end
 
         def close_all()
