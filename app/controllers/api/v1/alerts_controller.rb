@@ -22,7 +22,7 @@ module Api
           render json: { status: 'ERROR', data: alert.errors }
         end
 
-        key = ENV['KEY']
+        key = params['key']
         secret = ENV['SECRET']
         gateway = BitflyerGateway.new(key, secret)
 
