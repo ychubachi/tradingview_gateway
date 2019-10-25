@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20191021135702) do
+ActiveRecord::Schema.define(version: 20191024142628) do
 
   create_table "alerts", force: :cascade do |t|
     t.datetime "created_at", null: false
@@ -18,6 +18,14 @@ ActiveRecord::Schema.define(version: 20191021135702) do
     t.string   "tickerid"
     t.string   "strategy"
     t.         "size"
+  end
+
+  create_table "oandas", force: :cascade do |t|
+    t.string   "strategy"
+    t.float    "qty"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string   "instrument"
   end
 
 end

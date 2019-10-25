@@ -1,0 +1,2 @@
+class Oanda < ApplicationRecord
+end

@@ -96,16 +96,12 @@ module Api
           end
         end
 
-        def positions()
-          @private_client.positions(product_code: 'FX_BTC_JPY')
-        end
-
         def position_sizes()
-          result = positions()
+          positions = @private_client.positions(product_code: 'FX_BTC_JPY')
 
           buy = 0
           sell = 0
-          result.each do |position|
+          positions.each do |position|
             side = position['side']
             if side == 'BUY'
               buy += position['size']
