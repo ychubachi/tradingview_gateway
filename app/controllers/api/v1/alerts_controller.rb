@@ -1,4 +1,4 @@
-
+require 'bitflyer'
 
 module Api
   module V1
@@ -28,23 +28,11 @@ module Api
 
         case alert.strategy
         when 'long'
-          sizes = gateway.position_sizes()
-          if sizes[:buy] == 0
-            if sizes[:sell] > 0
-              gateway.close_all()
-            end
-            gateway.buy(size = alert.size)
-          end
+          gateway.buy
         when 'short'
-          sizes = gateway.position_sizes()
-          if sizes[:sell] == 0
-            if sizes[:buy] > 0
-              gateway.close_all()
-            end
-            gateway.sell(size = alert.size)
-          end
+          gateway.sell
         when 'close_all'
-          gateway.close_all()
+          gateway.close_all
         end
 
       end
@@ -69,49 +57,111 @@ module Api
       end
 
       def alert_params
-        params.require(:alert).permit(:strategy, :size)
-      end
-
-      class BitflyerGateway
-        def initialize(key, secret)
-          @key = key
-          @secret = secret
-          @private_client = Bitflyer.http_private_client(key, secret)
-        end
-
-        def buy(size = 0.001)
-          @private_client.send_child_order(product_code: 'FX_BTC_JPY', child_order_type: 'MARKET', side: 'BUY', size: size)
-        end
-
-        def sell(size = 0.001)
-          @private_client.send_child_order(product_code: 'FX_BTC_JPY', child_order_type: 'MARKET', side: 'SELL', size: size)
-        end
-
-        def close_all()
-          sizes = position_sizes()
-          if sizes[:buy] > 0
-            @private_client.send_child_order(product_code: 'FX_BTC_JPY', child_order_type: 'MARKET', side: 'SELL', size: sizes[:buy])
-          elsif sizes[:sell] > 0
-            @private_client.send_child_order(product_code: 'FX_BTC_JPY', child_order_type: 'MARKET', side: 'BUY',  size: sizes[:sell])
-          end
-        end
-
-        def position_sizes()
-          positions = @private_client.positions(product_code: 'FX_BTC_JPY')
-
-          buy = 0
-          sell = 0
-          positions.each do |position|
-            side = position['side']
-            if side == 'BUY'
-              buy += position['size']
-            elsif side == 'SELL'
-              sell += position['size']
-            end
-          end
-          {buy: buy, sell: sell}
-        end
+        params.require(:alert).permit(:strategy)
       end
     end
+  end
+end
+
+class BitflyerGateway
+  def initialize(key, secret)
+    @key = key
+    @secret = secret
+    @public_client = Bitflyer.http_public_client # (key, secret)
+    @private_client = Bitflyer.http_private_client(key, secret)
+  end
+
+  def buy(limit_stop = 10000.0, risk_parcentage = 0.02)
+    ps = position_sizes
+    if ps[:buy] > 0 # No pyramiding
+      return
+    end
+
+    if ps[:sell] > 0
+      close_all
+    end
+
+    size = calculate_size(limit_stop, risk_parcentage)
+    tp = trigger_price(-limit_stop)
+    parameters = [{
+      "product_code": "FX_BTC_JPY",
+      "condition_type": "MARKET",
+      "side": "BUY",
+      "size": size
+    },
+    {
+      "product_code": "FX_BTC_JPY",
+      "condition_type": "STOP",
+      "side": "SELL",
+      "trigger_price": tp,
+      "size": size
+    }]
+
+    @private_client.send_parent_order(order_method: 'IFD', parameters: parameters)
+  end
+
+  def sell(limit_stop = 10000.0, risk_parcentage = 0.02)
+    ps = position_sizes
+    if ps[:sell] > 0 # No pyramiding
+      return
+    end
+
+    if ps[:buy] > 0
+      close_all
+    end
+
+    size = calculate_size(limit_stop, risk_parcentage)
+    tp = trigger_price(limit_stop)
+    parameters = [{
+      "product_code": "FX_BTC_JPY",
+      "condition_type": "MARKET",
+      "side": "SELL",
+      "size": size
+    },
+    {
+      "product_code": "FX_BTC_JPY",
+      "condition_type": "STOP",
+      "side": "BUY",
+      "trigger_price": tp,
+      "size": size
+    }]
+    @private_client.send_parent_order(order_method: 'IFD', parameters: parameters)
+  end
+
+  def close_all
+    sizes = position_sizes
+    if sizes[:buy] > 0
+      @private_client.send_child_order(product_code: 'FX_BTC_JPY', child_order_type: 'MARKET', side: 'SELL', size: sizes[:buy])
+    elsif sizes[:sell] > 0
+      @private_client.send_child_order(product_code: 'FX_BTC_JPY', child_order_type: 'MARKET', side: 'BUY',  size: sizes[:sell])
+    end
+    @private_client.cancel_all_child_orders(product_code: 'FX_BTC_JPY')
+  end
+
+  def position_sizes
+    positions = @private_client.positions(product_code: 'FX_BTC_JPY')
+
+    buy = 0
+    sell = 0
+    positions.each do |position|
+      side = position['side']
+      if side == 'BUY'
+        buy += position['size']
+      elsif side == 'SELL'
+        sell += position['size']
+      end
+    end
+    {buy: buy, sell: sell}
+  end
+
+  def calculate_size(limit_stop = 10000.0, risk_parcentage = 0.02)
+    collateral = @private_client.collateral['collateral'] # 預入証拠金
+    amount_at_risk = (collateral * risk_parcentage).floor # 許容損失額（リスク）
+    (amount_at_risk / limit_stop).round(2)                # 売買するサイズ
+  end
+
+  def trigger_price(limit_stop = 10000.0)
+    mid_price = @public_client.board(product_code: 'FX_BTC_JPY')['mid_price']
+    mid_price + limit_stop
   end
 end
