@@ -71,7 +71,7 @@ class BitflyerGateway
     @private_client = Bitflyer.http_private_client(key, secret)
   end
 
-  def long(profit = 2000.0, loss = 1000.0, risk = 0.02)
+  def long(profit = 1000.0, loss = 500.0, risk = 0.02)
     ps = position_sizes
     if ps[:buy] > 0 # No pyramiding
       return
@@ -82,7 +82,7 @@ class BitflyerGateway
     order('BUY', risk, loss, profit)
   end
 
-  def short(profit = 2000.0, loss = 1000.0, risk = 0.02)
+  def short(profit = 1000.0, loss = 500.0, risk = 0.02)
     ps = position_sizes
     if ps[:sell] > 0 # No pyramiding
       return
