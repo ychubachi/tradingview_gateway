@@ -28,9 +28,9 @@ module Api
 
         case alert.strategy
         when 'long'
-          gateway.buy
+          gateway.long
         when 'short'
-          gateway.sell
+          gateway.short
         when 'close_all'
           gateway.close_all
         end
@@ -67,80 +67,59 @@ class BitflyerGateway
   def initialize(key, secret)
     @key = key
     @secret = secret
-    @public_client = Bitflyer.http_public_client # (key, secret)
+    @public_client  = Bitflyer.http_public_client
     @private_client = Bitflyer.http_private_client(key, secret)
   end
 
-  def buy(limit_stop = 10000.0, risk_parcentage = 0.02)
+  def long(profit = 2000.0, loss = 1000.0, risk = 0.02)
     ps = position_sizes
     if ps[:buy] > 0 # No pyramiding
       return
     end
-
     if ps[:sell] > 0
       close_all
     end
-
-    size = calculate_size(limit_stop, risk_parcentage)
-    tp = trigger_price(-limit_stop)
-    parameters = [{
-      "product_code": "FX_BTC_JPY",
-      "condition_type": "MARKET",
-      "side": "BUY",
-      "size": size
-    },
-    {
-      "product_code": "FX_BTC_JPY",
-      "condition_type": "STOP",
-      "side": "SELL",
-      "trigger_price": tp,
-      "size": size
-    }]
-
-    @private_client.send_parent_order(order_method: 'IFD', parameters: parameters)
+    order('BUY', risk, loss, profit)
   end
 
-  def sell(limit_stop = 10000.0, risk_parcentage = 0.02)
+  def short(profit = 2000.0, loss = 1000.0, risk = 0.02)
     ps = position_sizes
     if ps[:sell] > 0 # No pyramiding
       return
     end
-
     if ps[:buy] > 0
       close_all
     end
-
-    size = calculate_size(limit_stop, risk_parcentage)
-    tp = trigger_price(limit_stop)
-    parameters = [{
-      "product_code": "FX_BTC_JPY",
-      "condition_type": "MARKET",
-      "side": "SELL",
-      "size": size
-    },
-    {
-      "product_code": "FX_BTC_JPY",
-      "condition_type": "STOP",
-      "side": "BUY",
-      "trigger_price": tp,
-      "size": size
-    }]
-    @private_client.send_parent_order(order_method: 'IFD', parameters: parameters)
+    order('SELL', risk, loss, profit)
   end
 
   def close_all
+    r = @private_client.cancel_all_child_orders(product_code: 'FX_BTC_JPY')
     sizes = position_sizes
-    if sizes[:buy] > 0
-      @private_client.send_child_order(product_code: 'FX_BTC_JPY', child_order_type: 'MARKET', side: 'SELL', size: sizes[:buy])
-    elsif sizes[:sell] > 0
-      @private_client.send_child_order(product_code: 'FX_BTC_JPY', child_order_type: 'MARKET', side: 'BUY',  size: sizes[:sell])
+    try = 0
+    begin
+      try += 1
+      if sizes[:buy] > 0
+        r =  @private_client.send_child_order(product_code: 'FX_BTC_JPY', child_order_type: 'MARKET', side: 'SELL', size: sizes[:buy])
+        if r['status'] != nil
+          raise r.to_s # 発注失敗
+        end
+      elsif sizes[:sell] > 0
+        r = @private_client.send_child_order(product_code: 'FX_BTC_JPY', child_order_type: 'MARKET', side: 'BUY',  size: sizes[:sell])
+        if r['status'] != nil
+          raise r.to_s # 発注失敗
+        end
+      end
+    rescue
+      sleep(0.1)
+      retry if try < 10
+      raise 'close_all failed'
     end
-    @private_client.cancel_all_child_orders(product_code: 'FX_BTC_JPY')
+    r
   end
 
   def position_sizes
     positions = @private_client.positions(product_code: 'FX_BTC_JPY')
-
     buy = 0
     sell = 0
     positions.each do |position|
@@ -154,14 +133,72 @@ class BitflyerGateway
     {buy: buy, sell: sell}
   end
 
-  def calculate_size(limit_stop = 10000.0, risk_parcentage = 0.02)
+  def order(side,
+      risk_parcentage = 0.02, loss_price = 1000.0,
+      profit_price = 1000.0)
+
+    # ==========================================================================
+    # 現在の値段を取得する
+    # --------------------------------------------------------------------------
+    current_price = @public_client.board(
+        product_code: 'FX_BTC_JPY')['mid_price']
+    # --------------------------------------------------------------------------
+
+    # ==========================================================================
+    # 許容リスクに基づき取引量を計算する
+    # --------------------------------------------------------------------------
+    # 取引量は、価格が仮に現在値よりも loss_price 下がった場合でも、
+    # 預入証拠金の risk_parcentage までの損失に抑える量にする
+    # --------------------------------------------------------------------------
     collateral = @private_client.collateral['collateral'] # 預入証拠金
     amount_at_risk = (collateral * risk_parcentage).floor # 許容損失額（リスク）
-    (amount_at_risk / limit_stop).round(2)                # 売買するサイズ
-  end
+    size = (amount_at_risk / loss_price).round(2)         # 売買するサイズ
+    if (size * current_price) * 1.01 > collateral * 4     # 購入できるか？
+      size = ((collateral * 4) / current_price).round(2)  # 購入できる取引量に
+      size = (size * 100 - 1) / 100                       # 誤差修正
+    end
+    # --------------------------------------------------------------------------
 
-  def trigger_price(limit_stop = 10000.0)
-    mid_price = @public_client.board(product_code: 'FX_BTC_JPY')['mid_price']
-    mid_price + limit_stop
+    # ==========================================================================
+    # 決済注文を発注する
+    # --------------------------------------------------------------------------
+    case side
+    when 'BUY'
+      oposite_side = 'SELL'
+      limit_price = current_price + profit_price
+      stop_price  = current_price - loss_price
+    when 'SELL'
+      oposite_side = 'BUY'
+      limit_price = current_price - profit_price
+      stop_price  = current_price + loss_price
+    end
+
+    parameters = [{
+      "product_code": "FX_BTC_JPY",
+      "condition_type": "MARKET",
+      "side": side,
+      "size": size
+    },
+    {
+      "product_code": "FX_BTC_JPY",
+      "condition_type": "LIMIT",
+      "side": oposite_side,
+      "price": limit_price,
+      "size": size
+    },
+    {
+      "product_code": "FX_BTC_JPY",
+      "condition_type": "STOP",
+      "side": oposite_side,
+      "trigger_price": stop_price,
+      "size": size
+    }]
+
+    r = @private_client.send_parent_order(
+        order_method: 'IFDOCO', parameters: parameters)
+    if r['status'] != nil
+      raise r.to_s # 発注失敗
+    end
+    r
   end
 end
