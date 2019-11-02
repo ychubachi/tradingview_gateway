@@ -23,7 +23,7 @@ module Api
         end
 
         key = params['key']
-        secret = ENV['SECRET']
+        secret = JSON.parse(ENV["API_SECRET"])["BITFLYER"]
         gateway = BitflyerGateway.new(key, secret)
 
         case alert.strategy
@@ -63,65 +63,91 @@ module Api
   end
 end
 
+require 'bitflyer'
+
 class BitflyerGateway
   def initialize(key, secret)
+    puts "#{__method__}: ENTER"
     @key = key
     @secret = secret
     @public_client  = Bitflyer.http_public_client
     @private_client = Bitflyer.http_private_client(key, secret)
+    puts "#{__method__}: EXIT"
   end
 
   def long(profit = 1000.0, loss = 500.0, risk = 0.02)
+    puts "#{__method__}: ENTER"
+    puts "#{__method__}: profit = #{profit}, loss = #{loss}, risk = #{risk})"
     ps = position_sizes
-    if ps[:buy] > 0 # No pyramiding
+    puts "#{__method__}: position_sizes = #{ps}"
+    if ps[:buy] > 0
+      puts "#{__method__}: EXIT(no pyramiding)"
       return
     end
     if ps[:sell] > 0
       close_all
     end
     order('BUY', risk, loss, profit)
+    puts "#{__method__}: EXIT"
   end
 
   def short(profit = 1000.0, loss = 500.0, risk = 0.02)
+    puts "#{__method__}: ENTER"
+    puts "#{__method__}: profit = #{profit}, loss = #{loss}, risk = #{risk})"
     ps = position_sizes
-    if ps[:sell] > 0 # No pyramiding
+    puts "#{__method__}: position_sizes = #{ps}"
+    if ps[:sell] > 0
+      puts "#{__method__}: EXIT(no pyramiding)"
       return
     end
     if ps[:buy] > 0
       close_all
     end
     order('SELL', risk, loss, profit)
+    puts "#{__method__}: EXIT"
   end
 
   def close_all
+    puts "#{__method__}: ENTER"
+    puts "#{__method__}: CALL: cancel_all_child_orders"
     r = @private_client.cancel_all_child_orders(product_code: 'FX_BTC_JPY')
+    puts "#{__method__}: r = #{r}"
     sizes = position_sizes
+    puts "#{__method__}: sizes = #{sizes}"
+
     try = 0
     begin
       try += 1
       if sizes[:buy] > 0
-        r =  @private_client.send_child_order(product_code: 'FX_BTC_JPY', child_order_type: 'MARKET', side: 'SELL', size: sizes[:buy])
+        puts "#{__method__}: CALL: send_child_order"
+        r =  @private_client.send_child_order(product_code: 'FX_BTC_JPY',
+          child_order_type: 'MARKET', side: 'SELL', size: sizes[:buy])
         if r['status'] != nil
           raise r.to_s # 発注失敗
         end
+        puts "#{__method__}: r = #{r}"
       elsif sizes[:sell] > 0
-        r = @private_client.send_child_order(product_code: 'FX_BTC_JPY', child_order_type: 'MARKET', side: 'BUY',  size: sizes[:sell])
+        puts "#{__method__}: CALL: send_child_order"
+        r = @private_client.send_child_order(product_code: 'FX_BTC_JPY',
+          child_order_type: 'MARKET', side: 'BUY',  size: sizes[:sell])
         if r['status'] != nil
           raise r.to_s # 発注失敗
         end
+        puts "#{__method__}: r = #{r}"
       end
     rescue
       sleep(0.1)
       retry if try < 10
       raise 'close_all failed'
     end
-    r
+    puts "#{__method__}: EXIT"
   end
 
   def position_sizes
+    puts "#{__method__}: ENTER"
     positions = @private_client.positions(product_code: 'FX_BTC_JPY')
-    buy = 0
-    sell = 0
+    buy  = 0.0
+    sell = 0.0
     positions.each do |position|
       side = position['side']
       if side == 'BUY'
@@ -130,12 +156,18 @@ class BitflyerGateway
         sell += position['size']
       end
     end
+    buy  = buy.round(2) # ex) 0.045 + 0.005 = 0.049999999999999996
+    sell = sell.round(2)
+    puts "#{__method__}: EXIT"
     {buy: buy, sell: sell}
   end
 
   def order(side,
       risk_parcentage = 0.02, loss_price = 1000.0,
       profit_price = 1000.0)
+    puts "#{__method__}: ENTER"
+    puts "#{__method__}: side = #{side}, risk_parcentage = #{risk_parcentage}" +
+      ", loss_price = #{loss_price}, profit_price = #{profit_price}"
 
     # ==========================================================================
     # 現在の値段を取得する
@@ -194,11 +226,14 @@ class BitflyerGateway
       "size": size
     }]
 
+    puts "#{__method__}: CALL send_parent_order"
+    puts "#{__method__}: parameters = #{parameters}"
     r = @private_client.send_parent_order(
         order_method: 'IFDOCO', parameters: parameters)
     if r['status'] != nil
       raise r.to_s # 発注失敗
     end
-    r
+    puts "#{__method__}: r = #{r}"
+    puts "#{__method__}: EXIT"
   end
 end
