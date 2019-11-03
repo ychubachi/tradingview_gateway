@@ -22,23 +22,19 @@ module Api
           render json: { status: 'ERROR', data: alert.errors }
         end
 
-        p '==='
-        p alert
-        p '==='
-
         key = params['key']
         secret = JSON.parse(ENV["API_SECRET"])["BITFLYER"]
         gateway = BitflyerGateway.new(key, secret)
 
-        args = {
+        parameters = {
             size: alert.size,
             profit: alert.profit, loss: alert.loss, risk: alert.risk
         }.delete_if { |_, v| v.nil? }
         case alert.side
         when 'long'
-          gateway.long(args)
+          gateway.long(parameters)
         when 'short'
-          gateway.short(args)
+          gateway.short(parameters)
         when 'close_all'
           gateway.close_all
         end
@@ -95,7 +91,7 @@ class BitflyerGateway
     if ps[:sell] > 0
       close_all
     end
-    order(side: 'BUY', profit: profit, loss: loss, risk: risk)
+    order(side: 'BUY', size: size, profit: profit, loss: loss, risk: risk)
     puts "#{__method__}: EXIT"
   end
 
@@ -111,7 +107,7 @@ class BitflyerGateway
     if ps[:buy] > 0
       close_all
     end
-    order(side: 'SELL', profit: profit, loss: loss, risk: risk)
+    order(side: 'SELL', size: size, profit: profit, loss: loss, risk: risk)
     puts "#{__method__}: EXIT"
   end
 
