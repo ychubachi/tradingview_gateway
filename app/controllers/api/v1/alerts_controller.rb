@@ -26,7 +26,7 @@ module Api
         secret = JSON.parse(ENV["API_SECRET"])["BITFLYER"]
         gateway = BitflyerGateway.new(key, secret)
 
-        case alert.strategy
+        case alert.side
         when 'long'
           gateway.long
         when 'short'
@@ -57,7 +57,7 @@ module Api
       end
 
       def alert_params
-        params.require(:alert).permit(:strategy)
+        params.require(:alert).permit(:side, :size, :profit, :loss, :risk)
       end
     end
   end
