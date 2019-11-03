@@ -22,13 +22,13 @@ module Api
           render json: { status: 'ERROR', data: alert.errors }
         end
 
-        key = params['key']
-        secret = JSON.parse(ENV["API_SECRET"])["BITFLYER"]
-        gateway = BitflyerGateway.new(key, secret)
-
         p '==='
         p alert
         p '==='
+
+        key = params['key']
+        secret = JSON.parse(ENV["API_SECRET"])["BITFLYER"]
+        gateway = BitflyerGateway.new(key, secret)
 
         case alert.side
         when 'long'
