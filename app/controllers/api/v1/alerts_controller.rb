@@ -30,13 +30,15 @@ module Api
         secret = JSON.parse(ENV["API_SECRET"])["BITFLYER"]
         gateway = BitflyerGateway.new(key, secret)
 
+        args = {
+            size: alert.size,
+            profit: alert.profit, loss: alert.loss, risk: alert.risk
+        }.delete_if { |_, v| v.nil? }
         case alert.side
         when 'long'
-          gateway.long(size: alert.size,
-            profit: alert.profit, loss: alert.loss, risk: alert.risk)
+          gateway.long(args)
         when 'short'
-          gateway.short(size: alert.size,
-            profit: alert.profit, loss: alert.loss, risk: alert.risk)
+          gateway.short(args)
         when 'close_all'
           gateway.close_all
         end
