@@ -185,7 +185,7 @@ class BitflyerGateway
     # 取引量は、価格が仮に現在値よりも loss_price 下がった場合でも、
     # 預入証拠金の risk_parcentage までの損失に抑える量にする
     # --------------------------------------------------------------------------
-    if risk != nil
+    if size == nil
       collateral = @private_client.collateral['collateral'] # 預入証拠金
       amount_at_risk = (collateral * risk).floor # 許容損失額（リスク）
       size = (amount_at_risk / loss).round(2)         # 売買するサイズ
