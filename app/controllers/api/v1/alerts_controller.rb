@@ -28,9 +28,11 @@ module Api
 
         case alert.side
         when 'long'
-          gateway.long
+          gateway.long(size: alert.size,
+            profit: alert.profit, loss: alert.loss, risk: alert.risk)
         when 'short'
-          gateway.short
+          gateway.short(size: alert.size,
+            profit: alert.profit, loss: alert.loss, risk: alert.risk)
         when 'close_all'
           gateway.close_all
         end
@@ -75,7 +77,7 @@ class BitflyerGateway
     puts "#{__method__}: EXIT"
   end
 
-  def long(profit = 1000.0, loss = 500.0, risk = 0.02)
+  def long(size: nil, profit: 1000.0, loss: 500.0, risk: 0.02)
     puts "#{__method__}: ENTER"
     puts "#{__method__}: profit = #{profit}, loss = #{loss}, risk = #{risk})"
     ps = position_sizes
@@ -87,11 +89,11 @@ class BitflyerGateway
     if ps[:sell] > 0
       close_all
     end
-    order('BUY', risk, loss, profit)
+    order(side: 'BUY', profit: profit, loss: loss, risk: risk)
     puts "#{__method__}: EXIT"
   end
 
-  def short(profit = 1000.0, loss = 500.0, risk = 0.02)
+  def short(size: nil, profit: 1000.0, loss: 500.0, risk: 0.02)
     puts "#{__method__}: ENTER"
     puts "#{__method__}: profit = #{profit}, loss = #{loss}, risk = #{risk})"
     ps = position_sizes
@@ -103,7 +105,7 @@ class BitflyerGateway
     if ps[:buy] > 0
       close_all
     end
-    order('SELL', risk, loss, profit)
+    order(side: 'SELL', profit: profit, loss: loss, risk: risk)
     puts "#{__method__}: EXIT"
   end
 
@@ -112,6 +114,7 @@ class BitflyerGateway
     puts "#{__method__}: CALL: cancel_all_child_orders"
     r = @private_client.cancel_all_child_orders(product_code: 'FX_BTC_JPY')
     puts "#{__method__}: r = #{r}"
+
     sizes = position_sizes
     puts "#{__method__}: sizes = #{sizes}"
 
@@ -162,12 +165,10 @@ class BitflyerGateway
     {buy: buy, sell: sell}
   end
 
-  def order(side,
-      risk_parcentage = 0.02, loss_price = 1000.0,
-      profit_price = 1000.0)
+  def order(side: nil, size: nil, profit: 1000.0, loss: 1000.0, risk: 0.02)
     puts "#{__method__}: ENTER"
-    puts "#{__method__}: side = #{side}, risk_parcentage = #{risk_parcentage}" +
-      ", loss_price = #{loss_price}, profit_price = #{profit_price}"
+    puts "#{__method__}: side = #{side}, size = #{size}, " +
+      "profit = #{profit}, loss = #{loss}, risk = #{risk}"
 
     # ==========================================================================
     # 現在の値段を取得する
@@ -182,12 +183,14 @@ class BitflyerGateway
     # 取引量は、価格が仮に現在値よりも loss_price 下がった場合でも、
     # 預入証拠金の risk_parcentage までの損失に抑える量にする
     # --------------------------------------------------------------------------
-    collateral = @private_client.collateral['collateral'] # 預入証拠金
-    amount_at_risk = (collateral * risk_parcentage).floor # 許容損失額（リスク）
-    size = (amount_at_risk / loss_price).round(2)         # 売買するサイズ
-    if (size * current_price) * 1.01 > collateral * 4     # 購入できるか？
-      size = ((collateral * 4) / current_price).round(2)  # 購入できる取引量に
-      size = (size * 100 - 1) / 100                       # 誤差修正
+    if risk != nil
+      collateral = @private_client.collateral['collateral'] # 預入証拠金
+      amount_at_risk = (collateral * risk).floor # 許容損失額（リスク）
+      size = (amount_at_risk / loss).round(2)         # 売買するサイズ
+      if (size * current_price) * 1.01 > collateral * 4     # 購入できるか？
+        size = ((collateral * 4) / current_price).round(2)  # 購入できる取引量に
+        size = (size * 100 - 1) / 100                       # 誤差修正
+      end
     end
     # --------------------------------------------------------------------------
 
@@ -197,12 +200,12 @@ class BitflyerGateway
     case side
     when 'BUY'
       oposite_side = 'SELL'
-      limit_price = current_price + profit_price
-      stop_price  = current_price - loss_price
+      limit = current_price + profit
+      stop  = current_price - loss
     when 'SELL'
       oposite_side = 'BUY'
-      limit_price = current_price - profit_price
-      stop_price  = current_price + loss_price
+      limit = current_price - profit
+      stop  = current_price + loss
     end
 
     parameters = [{
@@ -215,14 +218,14 @@ class BitflyerGateway
       "product_code": "FX_BTC_JPY",
       "condition_type": "LIMIT",
       "side": oposite_side,
-      "price": limit_price,
+      "price": limit,
       "size": size
     },
     {
       "product_code": "FX_BTC_JPY",
       "condition_type": "STOP",
       "side": oposite_side,
-      "trigger_price": stop_price,
+      "trigger_price": stop,
       "size": size
     }]
 
