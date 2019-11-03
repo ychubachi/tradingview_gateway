@@ -26,6 +26,10 @@ module Api
         secret = JSON.parse(ENV["API_SECRET"])["BITFLYER"]
         gateway = BitflyerGateway.new(key, secret)
 
+        p '==='
+        p alert
+        p '==='
+
         case alert.side
         when 'long'
           gateway.long(size: alert.size,
