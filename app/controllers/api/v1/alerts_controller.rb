@@ -193,6 +193,8 @@ class BitflyerGateway
       total_price += position['size']
     end
     price = (total_price / total_size).floor
+    puts "#{__method__}: total_price=#{total_price}"
+    puts "#{__method__}: total_size=#{total_size}"
     puts "#{__method__}: EXIT"
     price
   end
