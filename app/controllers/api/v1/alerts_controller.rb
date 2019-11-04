@@ -192,10 +192,12 @@ class BitflyerGateway
       size += position['size']
       price += position['price'] * position['size']
     end
-    price = (price / size).floor
+    puts "#{__method__}: size=#{size}"
     puts "#{__method__}: price=#{price}"
+    avg_price = (price / size).floor
+    puts "#{__method__}: avg price=#{avg_price}"
     puts "#{__method__}: EXIT"
-    price
+    avg_price
   end
 
   def order(side: nil, size: nil, profit: 1000.0, loss: 1000.0, risk: 0.02)
