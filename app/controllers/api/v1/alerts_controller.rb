@@ -61,7 +61,7 @@ module Api
       end
 
       def alert_params
-        params.require(:alert).permit(:side, :size, :profit, :loss, :risk)
+        params.require(:alert).permit(:trade, :qty, :profit, :loss, :risk)
       end
     end
   end
