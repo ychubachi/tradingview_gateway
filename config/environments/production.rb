@@ -77,7 +77,7 @@ Rails.application.configure do
   config.active_record.dump_schema_after_migration = false
 
   config.middleware.use ExceptionNotification::Rack, slack: {
-    webhook_url: 'https://hooks.slack.com/services/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',
+    webhook_url: 'https://hooks.slack.com/services/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',
     channel: '#tradingview',
     additional_parameters: { mrkdwn: true }
   }
