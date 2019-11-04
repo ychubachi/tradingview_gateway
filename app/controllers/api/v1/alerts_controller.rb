@@ -186,15 +186,11 @@ class BitflyerGateway
       raise "#{__method__}: timeout"
     end
 
-    total_price = 0.0
-    total_size = 0.0
+    price = 0.0
     positions.each do |position|
-      total_size  += position['size']
-      total_price += position['price']
+      price += position['price'] * position['size']
     end
-    price = (total_price / total_size).floor
-    puts "#{__method__}: total_price=#{total_price}"
-    puts "#{__method__}: total_size=#{total_size}"
+    puts "#{__method__}: price=#{price}"
     puts "#{__method__}: EXIT"
     price
   end
