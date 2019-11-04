@@ -27,10 +27,10 @@ module Api
         gateway = BitflyerGateway.new(key, secret)
 
         parameters = {
-            size: alert.size,
+            size: alert.qty,
             profit: alert.profit, loss: alert.loss, risk: alert.risk
         }.delete_if { |_, v| v.nil? }
-        case alert.side
+        case alert.trade
         when 'long'
           gateway.long(parameters)
         when 'short'
