@@ -46,4 +46,5 @@ gem 'tzinfo-data', platforms: [:mingw, :mswin, :x64_mingw, :jruby]
 
 gem 'bitflyer'
 gem 'oanda_api_v20'
-gem 'exception_notification'
+
+gem 'slack-notifier'
