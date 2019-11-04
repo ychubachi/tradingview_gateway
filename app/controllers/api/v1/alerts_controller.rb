@@ -180,7 +180,7 @@ class BitflyerGateway
       try += 1
       if try < 10
         slep(0.1)
-        puts "#{__method__}: waiting positions.. #{try}/10"
+        puts "#{__method__}: waiting for positions.. #{try}/10"
         retry
       end
       raise "#{__method__}: timeout"
@@ -190,7 +190,7 @@ class BitflyerGateway
     total_size = 0.0
     positions.each do |position|
       total_size  += position['size']
-      total_price += position['size']
+      total_price += position['price']
     end
     price = (total_price / total_size).floor
     puts "#{__method__}: total_price=#{total_price}"
