@@ -45,7 +45,7 @@ ExceptionNotification.configure do |config|
   # }
 
   config.add_notifier :slack, {
-    :webhook_url => "https://hooks.slack.com/services/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",
+    :webhook_url => ENV['SLACK_WEBHOOK_URL']
     :channel => "#tradingview"
   }
 end
