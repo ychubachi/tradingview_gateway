@@ -187,9 +187,12 @@ class BitflyerGateway
     end
 
     price = 0.0
+    size = 0.0
     positions.each do |position|
+      size += position['size']
       price += position['price'] * position['size']
     end
+    price = (price / size).floor
     puts "#{__method__}: price=#{price}"
     puts "#{__method__}: EXIT"
     price
