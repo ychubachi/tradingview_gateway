@@ -201,7 +201,7 @@ class BitflyerGateway
     # --------------------------------------------------------------------------
     puts "#{__method__}: CALL: send_child_order"
     r =  @private_client.send_child_order(product_code: 'FX_BTC_JPY',
-      child_order_type: 'MARKET', side: side, size: sizes)
+      child_order_type: 'MARKET', side: side, size: size)
     if r['status'] != nil
       raise r.to_s # 発注失敗
     end
