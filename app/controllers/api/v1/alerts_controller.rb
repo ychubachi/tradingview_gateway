@@ -197,6 +197,18 @@ class BitflyerGateway
     # --------------------------------------------------------------------------
 
     # ==========================================================================
+    # 注文を発注する
+    # --------------------------------------------------------------------------
+    puts "#{__method__}: CALL: send_child_order"
+    r =  @private_client.send_child_order(product_code: 'FX_BTC_JPY',
+      child_order_type: 'MARKET', side: side, size: sizes)
+    if r['status'] != nil
+      raise r.to_s # 発注失敗
+    end
+    puts "#{__method__}: r = #{r}"
+    # --------------------------------------------------------------------------
+
+    # ==========================================================================
     # 決済注文を発注する
     # --------------------------------------------------------------------------
     case side
@@ -212,8 +224,9 @@ class BitflyerGateway
 
     parameters = [{
       "product_code": "FX_BTC_JPY",
-      "condition_type": "MARKET",
-      "side": side,
+      "condition_type": "STOP",
+      "side": oposite_side,
+      "trigger_price": stop,
       "size": size
     },
     {
@@ -222,19 +235,12 @@ class BitflyerGateway
       "side": oposite_side,
       "price": limit,
       "size": size
-    },
-    {
-      "product_code": "FX_BTC_JPY",
-      "condition_type": "STOP",
-      "side": oposite_side,
-      "trigger_price": stop,
-      "size": size
     }]
 
     puts "#{__method__}: CALL send_parent_order"
     puts "#{__method__}: parameters = #{parameters}"
     r = @private_client.send_parent_order(
-        order_method: 'IFDOCO', parameters: parameters)
+        order_method: 'OCO', parameters: parameters)
     if r['status'] != nil
       raise r.to_s # 発注失敗
     end
