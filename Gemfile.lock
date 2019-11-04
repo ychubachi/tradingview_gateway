@@ -1,3 +1,11 @@
+GIT
+  remote: https://github.com/smartinez87/exception_notification.git
+  revision: 6c7849f470beeeeae37c2a9c4d6cdd72352a0e01
+  specs:
+    exception_notification (4.4.0)
+      actionmailer (>= 4.0, < 7)
+      activesupport (>= 4.0, < 7)
+
 GEM
   remote: https://rubygems.org/
   specs:
@@ -49,9 +57,6 @@ GEM
     crass (1.0.4)
     erubis (2.7.0)
     event_emitter (0.2.6)
-    exception_notification (4.4.0)
-      actionmailer (>= 4.0, < 7)
-      activesupport (>= 4.0, < 7)
     faraday (0.14.0)
       multipart-post (>= 1.2, < 3)
     faraday_middleware (0.12.2)
@@ -159,7 +164,7 @@ PLATFORMS
 DEPENDENCIES
   bitflyer
   byebug
-  exception_notification
+  exception_notification!
   listen (~> 3.0.5)
   oanda_api_v20
   pg
