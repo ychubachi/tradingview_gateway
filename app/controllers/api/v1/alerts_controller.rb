@@ -15,6 +15,8 @@ module Api
       end
 
       def create
+        raise 'Create awesome error'
+
         alert = Alert.new(alert_params)
         if alert.save
           render json: { status: 'SUCCESS', data: alert }
