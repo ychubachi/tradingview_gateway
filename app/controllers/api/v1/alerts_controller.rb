@@ -167,6 +167,36 @@ class BitflyerGateway
     {buy: buy, sell: sell}
   end
 
+  def position_price
+    puts "#{__method__}: ENTER"
+
+    try = 0
+    begin
+      positions = @private_client.positions(product_code: 'FX_BTC_JPY')
+      if positions.size == 0
+        raise
+      end
+    rescue
+      try += 1
+      if try < 10
+        slep(0.1)
+        puts "#{__method__}: waiting positions.. #{try}/10"
+        retry
+      end
+      raise "#{__method__}: timeout"
+    end
+
+    total_price = 0.0
+    total_size = 0.0
+    positions.each do |position|
+      total_size  += position['size']
+      total_price += position['size']
+    end
+    price = (total_price / total_size).floor
+    puts "#{__method__}: EXIT"
+    price
+  end
+
   def order(side: nil, size: nil, profit: 1000.0, loss: 1000.0, risk: 0.02)
     puts "#{__method__}: ENTER"
     puts "#{__method__}: side = #{side}, size = #{size}, " +
@@ -207,6 +237,9 @@ class BitflyerGateway
     end
     puts "#{__method__}: r = #{r}"
     # --------------------------------------------------------------------------
+
+    current_price = position_price
+    puts "#{__method__}: #{current_price}"
 
     # ==========================================================================
     # 決済注文を発注する
