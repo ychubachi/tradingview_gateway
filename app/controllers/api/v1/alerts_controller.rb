@@ -80,8 +80,6 @@ class BitflyerGateway
   end
 
   def long(size: nil, profit: 1000.0, loss: 500.0, risk: 0.02)
-    raise "Awesome Exception"
-
     puts "#{__method__}: ENTER"
     puts "#{__method__}: profit = #{profit}, loss = #{loss}, risk = #{risk})"
     ps = position_sizes
