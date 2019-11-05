@@ -16,11 +16,6 @@ module Api
 
       def create
         alert = Alert.new(alert_params)
-        if alert.save
-          render json: { status: 'SUCCESS', data: alert }
-        else
-          render json: { status: 'ERROR', data: alert.errors }
-        end
 
         key = params['key']
         secret = JSON.parse(ENV["API_SECRET"])["BITFLYER"]
@@ -39,6 +34,11 @@ module Api
           gateway.close_all
         end
 
+        if alert.save
+          render json: { status: 'SUCCESS', data: alert }
+        else
+          render json: { status: 'ERROR', data: alert.errors }
+        end
       end
 
       def destroy

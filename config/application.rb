@@ -27,6 +27,8 @@ module TradingviewWebhook
     # Skip views, helpers and assets when generating a new resource.
     config.api_only = true
 
-    config.paths.add 'lib', eager_load: true
+    # config.paths.add 'lib', eager_load: true
+    config.enable_dependency_loading = true # <- これを追加しないといけないらしい
+    config.autoload_paths << Rails.root.join('lib')
   end
 end
