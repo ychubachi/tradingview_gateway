@@ -178,8 +178,8 @@ class BitflyerGateway
       end
     rescue
       try += 1
-      if try < 10
-        sleep(0.1)
+      if try < 50
+        sleep(0.2)
         puts "#{__method__}: waiting for positions.. #{try}/10"
         retry
       end
