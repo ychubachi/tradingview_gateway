@@ -61,7 +61,8 @@ module Api
       end
 
       def alert_params
-        params.require(:alert).permit(:trade, :qty, :profit, :loss, :risk)
+        params.require(:alert).permit(:trade, :qty, :profit, :loss, :risk,
+          :exchange, :ticker)
       end
     end
   end
@@ -178,8 +179,8 @@ class BitflyerGateway
       end
     rescue
       try += 1
-      if try < 50
-        sleep(0.2)
+      if try < 10
+        sleep(0.1)
         puts "#{__method__}: waiting for positions.. #{try}/10"
         retry
       end
