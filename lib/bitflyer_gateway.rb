@@ -11,8 +11,7 @@ class BitflyerGateway
   end
 
   def long(size: nil, profit: 1000.0, loss: 500.0, risk: 0.02)
-    puts "#{__method__}: ENTER"
-    puts "#{__method__}: profit = #{profit}, loss = #{loss}, risk = #{risk})"
+    puts "#{__method__}: ENTER(size = #{size}, profit = #{profit}, loss = #{loss}, risk = #{risk})"
     ps = position_sizes
     puts "#{__method__}: position_sizes = #{ps}"
     if ps[:buy] > 0
@@ -27,8 +26,7 @@ class BitflyerGateway
   end
 
   def short(size: nil, profit: 1000.0, loss: 500.0, risk: 0.02)
-    puts "#{__method__}: ENTER"
-    puts "#{__method__}: profit = #{profit}, loss = #{loss}, risk = #{risk})"
+    puts "#{__method__}: ENTER(size = #{size}, profit = #{profit}, loss = #{loss}, risk = #{risk})"
     ps = position_sizes
     puts "#{__method__}: position_sizes = #{ps}"
     if ps[:sell] > 0
@@ -123,8 +121,6 @@ class BitflyerGateway
       size += position['size']
       price += position['price'] * position['size']
     end
-    puts "#{__method__}: size=#{size}"
-    puts "#{__method__}: price=#{price}"
     avg_price = (price / size).floor
     puts "#{__method__}: avg price=#{avg_price}"
     puts "#{__method__}: EXIT"
@@ -140,7 +136,7 @@ class BitflyerGateway
     # 現在の値段を取得する
     # --------------------------------------------------------------------------
     current_price = @public_client.board(
-        product_code: 'FX_BTC_JPY')['mid_price']
+      product_code: 'FX_BTC_JPY')['mid_price']
     # --------------------------------------------------------------------------
 
     # ==========================================================================
@@ -172,7 +168,14 @@ class BitflyerGateway
     puts "#{__method__}: r = #{r}"
     # --------------------------------------------------------------------------
 
-    current_price = position_price
+    # ==========================================================================
+    # 平均取得単価を求める
+    # --------------------------------------------------------------------------
+    begin
+      current_price = position_price
+    rescue
+      puts 'could not get position price. use mid price.'
+    end
     puts "#{__method__}: #{current_price}"
 
     # ==========================================================================
