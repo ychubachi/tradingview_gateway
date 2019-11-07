@@ -159,13 +159,14 @@ class BitflyerGateway
     # ==========================================================================
     # 注文を発注する
     # --------------------------------------------------------------------------
-    puts "#{__method__}: CALL: send_child_order"
-    r =  @private_client.send_child_order(product_code: 'FX_BTC_JPY',
-      child_order_type: 'MARKET', side: side, size: size)
-    if r['status'] != nil
-      raise r.to_s # 発注失敗
-    end
+    s = {product_code: 'FX_BTC_JPY',
+      child_order_type: 'MARKET', side: side, size: size}
+    puts "#{__method__}: CALL: send_child_order(#{s})"
+    r =  @private_client.send_child_order(s)
     puts "#{__method__}: r = #{r}"
+    if r['status'] != nil
+      raise "#{s}\n#{r}" # 発注失敗
+    end
     # --------------------------------------------------------------------------
 
     # ==========================================================================
