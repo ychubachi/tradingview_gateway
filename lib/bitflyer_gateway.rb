@@ -33,13 +33,11 @@ class BitflyerGateway
     ps = position_sizes
     puts "#{__method__}: position_sizes = #{ps}"
     if ps[:buy] > 0
-      puts "#{__method__}: EXIT(no pyramiding)"
-      return
-    end
-    if ps[:sell] > 0
+      puts "#{__method__}: no pyramiding"
+    else
       close_all
+      order(side: 'BUY', size: size, profit: profit, loss: loss, risk: risk)
     end
-    order(side: 'BUY', size: size, profit: profit, loss: loss, risk: risk)
     puts "#{__method__}: EXIT"
   end
 
@@ -48,13 +46,11 @@ class BitflyerGateway
     ps = position_sizes
     puts "#{__method__}: position_sizes = #{ps}"
     if ps[:sell] > 0
-      puts "#{__method__}: EXIT(no pyramiding)"
-      return
-    end
-    if ps[:buy] > 0
+      puts "#{__method__}: no pyramiding"
+    else
       close_all
+      order(side: 'SELL', size: size, profit: profit, loss: loss, risk: risk)
     end
-    order(side: 'SELL', size: size, profit: profit, loss: loss, risk: risk)
     puts "#{__method__}: EXIT"
   end
 
@@ -73,9 +69,13 @@ class BitflyerGateway
     puts "#{__method__}: sizes = #{sizes}"
     # --------------------------------------------------------------------------
 
+    # ==========================================================================
+    # 決済注文を発注する
+    # --------------------------------------------------------------------------
     if sizes[:buy] > 0
       send_child_order(side: 'SELL', size: sizes[:buy])
-    elsif sizes[:sell] > 0
+    end
+    if sizes[:sell] > 0
       send_child_order(side: 'BUY', size: sizes[:sell])
     end
     puts "#{__method__}: EXIT"
