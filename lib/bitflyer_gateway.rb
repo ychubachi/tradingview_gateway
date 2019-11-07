@@ -208,13 +208,12 @@ class BitflyerGateway
       "size": size
     }]
 
-    puts "#{__method__}: CALL send_parent_order"
-    puts "#{__method__}: parameters = #{parameters}"
-    r = @private_client.send_parent_order(
-        order_method: 'OCO', parameters: parameters)
+    s = {order_method: 'OCO', parameters: parameters}
+    puts "#{__method__}: CALL send_parent_order(#{s})"
+    r = @private_client.send_parent_order(s)
     puts "#{__method__}: r = #{r}"
     if r['status'] != nil
-      raise r.to_s # 発注失敗
+      raise "#{s}\n#{r}" # 発注失敗
     end
     puts "#{__method__}: EXIT"
   end
