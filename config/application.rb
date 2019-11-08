@@ -30,5 +30,7 @@ module TradingviewWebhook
     # config.paths.add 'lib', eager_load: true
     config.enable_dependency_loading = true # <- これを追加しないといけないらしい
     config.autoload_paths << Rails.root.join('lib')
+
+    config.active_job.queue_adapter = :sidekiq
   end
 end

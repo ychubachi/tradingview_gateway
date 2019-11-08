@@ -49,3 +49,5 @@ gem 'oanda_api_v20'
 
 gem 'exception_notification', :github => 'smartinez87/exception_notification'
 gem 'slack-notifier'
+
+gem 'sidekiq'
