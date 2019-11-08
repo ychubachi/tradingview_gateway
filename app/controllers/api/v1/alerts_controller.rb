@@ -6,6 +6,8 @@ module Api
       before_action :set_alert, only: [:show, :update, :destroy]
 
       def index
+        TradeJob.perform_later(nil)
+
         alerts = Alert.order(created_at: :desc)
         render json: { status: 'SUCCESS', message: 'Loaded alerts', data: alerts }
       end
