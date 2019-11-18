@@ -36,11 +36,11 @@ module Api
           gateway.close_all
         end
 
-        if alert.save
+        # if alert.save
           render json: { status: 'SUCCESS', data: alert }
-        else
-          render json: { status: 'ERROR', data: alert.errors }
-        end
+        # else
+        #   render json: { status: 'ERROR', data: alert.errors }
+        # end
       end
 
       def destroy

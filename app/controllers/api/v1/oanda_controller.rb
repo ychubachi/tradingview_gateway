@@ -1,4 +1,4 @@
-require "oanda_api_v20"
+require 'oanda_gateway'
 
 module Api
   module V1
@@ -16,11 +16,6 @@ module Api
 
       def create
         oanda = Oanda.new(oanda_params)
-        if oanda.save
-          render json: { status: 'SUCCESS', data: oanda }
-        else
-          render json: { status: 'ERROR', data: oanda.errors }
-        end
 
         account_id = params['account_id']
         p "account_id=" + account_id
@@ -48,6 +43,11 @@ module Api
           gateway.close_all()
         end
 
+        if oanda.save
+          render json: { status: 'SUCCESS', data: oanda }
+        else
+          render json: { status: 'ERROR', data: oanda.errors }
+        end
       end
 
       def destroy
@@ -74,62 +74,5 @@ module Api
       end
 
     end
-  end
-end
-
-class OandaGateway
-  def initialize(account_id, token, practice = true)
-    @account_id = account_id
-    @token = token
-    @client = OandaApiV20.new(access_token: token, practice: practice)
-  end
-
-  def buy(instrument = 'USD_JPY', units = 100)
-    options = {
-      'order' => {
-        'units' => units,
-        'instrument' => instrument,
-        'timeInForce' => 'FOK',
-        'type' => 'MARKET',
-        'positionFill' => 'DEFAULT'
-      }
-    }
-    @client.account(@account_id).order(options).create
-  end
-
-  def sell(instrument = 'USD_JPY', units = 100)
-    options = {
-      'order' => {
-        'units' => - units,
-        'instrument' => instrument,
-        'timeInForce' => 'FOK',
-        'type' => 'MARKET',
-        'positionFill' => 'DEFAULT'
-      }
-    }
-
-    @client.account(@account_id).order(options).create
-  end
-
-  def close_all(instrument = 'USD_JPY')
-    units = position_units(instrument)
-    if units[:long] > 0
-      sell(instrument, units[:long])
-    elsif units[:short] > 0
-      buy(instrument, units[:short])
-    end
-  end
-
-  def position_units(instrument = 'USD_JPY')
-    positions = @client.account(@account_id).positions.show
-    long = 0
-    short = 0
-    positions['positions'].each do |postion|
-      if postion['instrument'] == instrument
-        long  += postion['long'] ['units'].to_i
-        short += postion['short']['units'].to_i
-      end
-    end
-    {long: long, short: -short} # short is negative value originally
   end
 end
